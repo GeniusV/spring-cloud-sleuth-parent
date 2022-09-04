@@ -60,13 +60,23 @@ public class ServiceApplication {
     @GetMapping(value = "/2")
     public String m2() {
         log.info("我是微服务2号。。。");
-        List<Future<ResponseEntity<String>>> respList = IntStream.range(0, 3).mapToObj((i) -> {
-                    return threadPoolExecutor.submit(() -> {
-                        ResponseEntity<String> result = restTemplate().getForEntity("http://127.0.0.1:8883/1", String.class);
-                        return result;
-                    });
-                })
-                .collect(Collectors.toList());
+        List<Future<ResponseEntity<String>>> futureList = IntStream.range(0, 3).mapToObj((i) -> {
+            return threadPoolExecutor.submit(() -> {
+                ResponseEntity<String> result = restTemplate().getForEntity("http://127.0.0.1:8883/1", String.class);
+                return result;
+            });
+        }).collect(Collectors.toList());
+
+        List<ResponseEntity<String>> resList = futureList.stream()
+                .map(future -> {
+                    try {
+                        return future.get();
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    } catch (ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).collect(Collectors.toList());
         // Start a span. If there was a span present in this thread it will become
 // the `newSpan`'s parent.
         Span newSpan = this.tracer.nextSpan().name("calculateTax");
@@ -83,7 +93,7 @@ public class ServiceApplication {
             // the span to send it to a distributed tracing system e.g. Zipkin
             newSpan.end();
         }
-        return respList.toString();
+        return resList.toString();
     }
 
     @Bean
