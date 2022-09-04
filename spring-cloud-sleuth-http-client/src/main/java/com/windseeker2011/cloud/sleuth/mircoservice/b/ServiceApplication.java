@@ -35,6 +35,9 @@ public class ServiceApplication {
     @Autowired
     private Tracer tracer;
 
+    @Autowired
+    private BusinessService businessService;
+
     @Bean
 //	@LoadBalanced
     public RestTemplate restTemplate() {
@@ -69,18 +72,18 @@ public class ServiceApplication {
             });
         }).collect(Collectors.toList());
 
-        List<ResponseEntity<String>> resList = futureList.stream()
-                .map(future -> {
-                    try {
-                        return future.get();
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    } catch (ExecutionException e) {
-                        throw new RuntimeException(e);
-                    }
-                }).collect(Collectors.toList());
-        // Start a span. If there was a span present in this thread it will become
-// the `newSpan`'s parent.
+        List<ResponseEntity<String>> resList = futureList.stream().map(future -> {
+            try {
+                return future.get();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }).collect(Collectors.toList());
+
+        businessService.complicatedLogicLevel1(3);
+
         Span newSpan = this.tracer.nextSpan().name("calculateTax");
         try (Tracer.SpanInScope ws = this.tracer.withSpan(newSpan.start())) {
             // ...
