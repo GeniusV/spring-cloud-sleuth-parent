@@ -1,5 +1,6 @@
 package com.windseeker2011.cloud.sleuth.mircoservice.c;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
@@ -20,6 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 @SpringBootApplication
 public class ServiceApplication {
 
+	@Autowired
+	private BusinessService businessService;
+
 	/**
 	 * 一层调用
 	 * 
@@ -28,6 +32,7 @@ public class ServiceApplication {
 	@GetMapping(value = "/1")
 	public String m1() {
 		log.info("我是微服务3号。。。");
+		businessService.complicatedLogicLevel1(3);
 		return "success";
 	}
 

@@ -7,6 +7,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.cloud.sleuth.Span;
 import org.springframework.cloud.sleuth.Tracer;
+import org.springframework.cloud.sleuth.instrument.async.TraceCallable;
+import org.springframework.cloud.sleuth.internal.DefaultSpanNamer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,14 +31,11 @@ import java.util.stream.IntStream;
 @SpringBootApplication
 public class ServiceApplication {
 
-    @Autowired
-    private ThreadPoolExecutor threadPoolExecutor;
+    //    @Autowired
+    private ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(10, 10, 60, TimeUnit.SECONDS, new SynchronousQueue<>());
 
     @Autowired
     private Tracer tracer;
-
-    @Autowired
-    private BusinessService businessService;
 
     @Bean
 //	@LoadBalanced
@@ -64,12 +63,13 @@ public class ServiceApplication {
     public String m2() {
         log.info("我是微服务2号。。。");
         log.info("ThreadPool class: {}", threadPoolExecutor.getClass().getName());
+
         List<Future<ResponseEntity<String>>> futureList = IntStream.range(0, 3).mapToObj((i) -> {
-            return threadPoolExecutor.submit(() -> {
-                log.info("execute in thread: {}", Thread.currentThread().getName());
+            return threadPoolExecutor.submit(new TraceCallable<>(tracer, new DefaultSpanNamer(), () -> {
+                log.info("execute in thread: {}, traceId: {}", Thread.currentThread().getName(), tracer.currentSpan().context().traceId());
                 ResponseEntity<String> result = restTemplate().getForEntity("http://127.0.0.1:8883/1", String.class);
                 return result;
-            });
+            }, "thread pool execute " + i));
         }).collect(Collectors.toList());
 
         List<ResponseEntity<String>> resList = futureList.stream().map(future -> {
@@ -82,7 +82,7 @@ public class ServiceApplication {
             }
         }).collect(Collectors.toList());
 
-        businessService.complicatedLogicLevel1(3);
+//        businessService.complicatedLogicLevel1(5);
 
         Span newSpan = this.tracer.nextSpan().name("calculateTax");
         try (Tracer.SpanInScope ws = this.tracer.withSpan(newSpan.start())) {

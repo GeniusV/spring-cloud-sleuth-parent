@@ -1,4 +1,4 @@
-package com.windseeker2011.cloud.sleuth.mircoservice.b;
+package com.windseeker2011.cloud.sleuth.mircoservice.c;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
