@@ -6,6 +6,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.cloud.sleuth.Span;
+import org.springframework.cloud.sleuth.TraceContext;
 import org.springframework.cloud.sleuth.Tracer;
 import org.springframework.cloud.sleuth.instrument.async.TraceCallable;
 import org.springframework.cloud.sleuth.internal.DefaultSpanNamer;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -64,9 +66,22 @@ public class ServiceApplication {
         log.info("我是微服务2号。。。");
         log.info("ThreadPool class: {}", threadPoolExecutor.getClass().getName());
 
+//        List<Future<ResponseEntity<String>>> futureList = IntStream.range(0, 3).mapToObj((i) -> {
+//            return threadPoolExecutor.submit(() -> {
+//                log.info("execute in thread: {}, traceId: {}",
+//                        Thread.currentThread().getName(),
+//                        Optional.ofNullable(tracer.currentSpan())
+//                                .map(Span::context)
+//                                .map(TraceContext::traceId)
+//                                .orElse(""));
+//                ResponseEntity<String> result = restTemplate().getForEntity("http://127.0.0.1:8883/1", String.class);
+//                return result;
+//            });
+//        }).collect(Collectors.toList());
+
         List<Future<ResponseEntity<String>>> futureList = IntStream.range(0, 3).mapToObj((i) -> {
             return threadPoolExecutor.submit(new TraceCallable<>(tracer, new DefaultSpanNamer(), () -> {
-                log.info("execute in thread: {}, traceId: {}", Thread.currentThread().getName(), tracer.currentSpan().context().traceId());
+                log.info("execute in thread: {}, traceId: {}", Thread.currentThread().getName(), Optional.ofNullable(tracer.currentSpan()).map(Span::context).map(TraceContext::traceId).orElse(""));
                 ResponseEntity<String> result = restTemplate().getForEntity("http://127.0.0.1:8883/1", String.class);
                 return result;
             }, "thread pool execute " + i));
