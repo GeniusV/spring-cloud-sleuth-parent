@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ServiceApplication {
 
 	@Bean
-	@LoadBalanced
+//	@LoadBalanced
 	public RestTemplate restTemplate() {
 		return new RestTemplate();
 	}
@@ -49,7 +49,8 @@ public class ServiceApplication {
 	@GetMapping(value = "/2")
 	public String m2() {
 		log.info("我是微服务2号。。。");
-		ResponseEntity<String> result = restTemplate().getForEntity("http://MICROSERVICE-C/1", String.class);
+		ResponseEntity<String> result = restTemplate().getForEntity("http://127.0.0.1:8883/1", String.class);
+		log.info("test loging");
 		return result.getBody();
 	}
 
