@@ -19,7 +19,7 @@
 2. 启动三个微服务：
 >a、b、c包下ServiceApplication.java
 3. 启动zipkin服务：
->ZipkinServerApplication.java
+>sh zipkin.sh
 
 ### 3.测试方法
 1. <http://localhost:8881/1>
