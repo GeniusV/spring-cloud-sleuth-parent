@@ -1,9 +1,12 @@
 package com.windseeker2011.cloud.sleuth.mircoservice.b;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+import org.springframework.cloud.sleuth.Span;
+import org.springframework.cloud.sleuth.Tracer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +26,9 @@ import lombok.extern.slf4j.Slf4j;
 @EnableEurekaClient
 @SpringBootApplication
 public class ServiceApplication {
+
+	@Autowired
+	private Tracer tracer;
 
 	@Bean
 //	@LoadBalanced
@@ -50,7 +56,23 @@ public class ServiceApplication {
 	public String m2() {
 		log.info("我是微服务2号。。。");
 		ResponseEntity<String> result = restTemplate().getForEntity("http://127.0.0.1:8883/1", String.class);
-		log.info("test loging");
+		// Start a span. If there was a span present in this thread it will become
+// the `newSpan`'s parent.
+		Span newSpan = this.tracer.nextSpan().name("calculateTax");
+		try (Tracer.SpanInScope ws = this.tracer.withSpan(newSpan.start())) {
+			// ...
+			// You can tag a span
+			log.info("test taxValue");
+			newSpan.tag("taxValue", "oooo");
+			// ...
+			// You can log an event on a span
+			newSpan.event("taxCalculated");
+		}
+		finally {
+			// Once done remember to end the span. This will allow collecting
+			// the span to send it to a distributed tracing system e.g. Zipkin
+			newSpan.end();
+		}
 		return result.getBody();
 	}
 
