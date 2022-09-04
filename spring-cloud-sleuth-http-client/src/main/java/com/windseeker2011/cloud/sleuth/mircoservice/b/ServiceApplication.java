@@ -60,8 +60,10 @@ public class ServiceApplication {
     @GetMapping(value = "/2")
     public String m2() {
         log.info("我是微服务2号。。。");
+        log.info("ThreadPool class: {}", threadPoolExecutor.getClass().getName());
         List<Future<ResponseEntity<String>>> futureList = IntStream.range(0, 3).mapToObj((i) -> {
             return threadPoolExecutor.submit(() -> {
+                log.info("execute in thread: {}", Thread.currentThread().getName());
                 ResponseEntity<String> result = restTemplate().getForEntity("http://127.0.0.1:8883/1", String.class);
                 return result;
             });
